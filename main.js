@@ -1,26 +1,46 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const { startServer, stopServer, isRunning } = require('./express-app/server');
 
-const createWindow = () => {
-  const win = new BrowserWindow({
+let mainWindow;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
     width: 800,
-    height: 600
-  })
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
 
-  win.loadFile('index.html')
+  mainWindow.loadFile('renderer/index.html');
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
-app.whenReady().then(() => {
-  createWindow()
+app.whenReady().then(createWindow);
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
-  })
-})
+// IPC handlers
+ipcMain.handle('start-server', () => {
+  startServer();
+});
 
+ipcMain.handle('stop-server', () => {
+  stopServer();
+});
+
+ipcMain.handle('get-server-status', () => {
+  return isRunning(); 
+});
+
+// Clean shutdown
 app.on('window-all-closed', () => {
+  stopServer();
   if (process.platform !== 'darwin') {
-    app.quit()
+    app.quit();
   }
-})
+});
