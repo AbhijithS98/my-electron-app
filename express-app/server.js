@@ -1,32 +1,66 @@
 const express = require('express');
-const app = express();
+const localtunnel = require('localtunnel');
 
-const PORT = 3000;
-let server = null;
+let serverInstance = null;
+let tunnelInstance = null;
+let publicUrl = null;
+
+// Start Express server
+const app = express();
+const PORT = 3050;
 
 app.get('/', (req, res) => {
-  res.send('Hello from Express!');
+  res.send('Express server is running!');
 });
 
-function startServer() {
-  if (!server) {
-    server = app.listen(PORT, () => {
-      console.log(`Server running at http://localhost:${PORT}`);
-    });
-  }
+serverInstance = app.listen(PORT, () => {
+  console.log(`Express app listening at http://localhost:${PORT}`);
+});
+
+async function startServer() {
+  if (serverInstance) return publicUrl; 
+
+  // Starting LocalTunnel client 
+  tunnelInstance = await localtunnel({
+    port: PORT,
+    host: 'http://visionvibe.sbs', 
+    // header: {
+    //     'x-access-token': 'my_super_secret_token' 
+    // }
+  });
+
+  publicUrl = tunnelInstance.url;
+  console.log(`Tunnel established at ${publicUrl}`);
+
+  tunnelInstance.on('close', () => {
+    console.log('Tunnel closed');
+  });
+
+  return publicUrl;
 }
 
 function stopServer() {
-  if (server) {
-    server.close(() => {
-      console.log('Server stopped.');
-      server = null;
+  if (serverInstance) {
+    serverInstance.close(() => {
+      console.log('express server stopped.');
+      serverInstance = null;
     });
   }
+  if (tunnelInstance) {
+    tunnelInstance.close(() => {
+      console.log('tunnel instance closed.');
+      tunnelInstance = null;
+    });
+  }
+  publicUrl = null;
 }
 
 function isRunning() {
-  return !!server;
+  return !!serverInstance;
 }
 
-module.exports = { startServer, stopServer, isRunning };
+function getPublicUrl() {
+  return publicUrl;
+}
+
+module.exports = { startServer, stopServer, isRunning, getPublicUrl };
