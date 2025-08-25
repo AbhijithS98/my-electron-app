@@ -1,10 +1,10 @@
 const toggleBtn = document.getElementById("toggle-server-btn");
 const statusBox = document.querySelector(".status-box");
 const statusText = document.getElementById("status-text");
-// const publicUrlSpan = document.getElementById("public-url");
+const publicUrlSpan = document.getElementById("public-url");
 
 let isRunning = false;
-// let publicUrl = null;
+let tunnelId = '';
 
 // async function getLocalIp() {
 //   let localIp = await window.api.getLocalIp();
@@ -17,14 +17,14 @@ async function updateUI() {
     statusBox.classList.add("status-running");
     statusText.textContent = "Running";
     // const url = await window.api.getPublicUrl();
-    // if (url) {
-    //   publicUrlSpan.textContent = url; // show tunnel URL instead of real IP
-    // }
+    if (tunnelId) {
+      publicUrlSpan.textContent = tunnelId;
+    }
     toggleBtn.textContent = "Stop Server";
   } else {
     statusBox.classList.remove("status-running");
     statusText.textContent = "Stopped";
-    // publicUrlSpan.textContent = "Not available";
+    publicUrlSpan.textContent = "Not available";
     toggleBtn.textContent = "Start Server";
   }
 }
@@ -47,8 +47,8 @@ toggleBtn.addEventListener('click', async () => {
   if (isRunning) {
     await window.api.stopServer();
   } else {
-    await window.api.startServer();
-    // publicUrlSpan.textContent = url || "Error starting tunnel";
+    tunnelId = await window.api.startServer();
+    publicUrlSpan.textContent = tunnelId || "Error starting socket";
   }
   updateUI();
 });

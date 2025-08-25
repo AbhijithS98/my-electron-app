@@ -28,7 +28,8 @@ app.whenReady().then(createWindow);
 
 // IPC handlers
 ipcMain.handle('start-server', async () => {
-  const res = await startServer();
+  const tunnelId = await startServer();
+  return tunnelId;
 });
 
 ipcMain.handle('stop-server', () => {
