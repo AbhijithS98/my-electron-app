@@ -57,6 +57,8 @@ async function startServer() {
   // });
 
   socket.on("perform-task", async (task) => {
+    console.log("task recieved:",task);
+    
     try {
       const resp = await axios.get(task.endpoint, { validateStatus: () => true });
 
