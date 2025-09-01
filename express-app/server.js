@@ -33,48 +33,32 @@ async function startServer() {
      socket.emit("register", tunnelId);
   });
   
-  // // handle forwarded requests
-  // socket.on("http-request", async (payload, ack) => {
-  //   try {
-  //     const url = `http://127.0.0.1:${PORT}${payload.path}`;
-  //     const resp = await axios({
-  //       method: payload.method,
-  //       url,
-  //       headers: payload.headers,
-  //       data: payload.body,
-  //       validateStatus: () => true, 
-  //     });
-  //     console.log("response is: ",resp);
-      
-  //     ack({
-  //       status: resp.status,
-  //       headers: resp.headers,
-  //       body: resp.data,
-  //     });
-  //   } catch (err) {
-  //     ack({ status: 500, headers: {}, body: "Local error: " + err.message });
-  //   }
-  // });
 
-  socket.on("perform-task", async (task) => {
-    console.log("task recieved:",task);
-    
+  // Listen for jobs
+  socket.on("perform-task", async (job) => {
+    console.log("📥 Received job:", job);
+
+    const { requestId, endpoint, method, headers, payload } = job;
+
     try {
-      const resp = await axios.get(task.endpoint, { validateStatus: () => true });
-
-      socket.emit("task-response", {
-        client: task.client,
-        endpoint: task.endpoint,
-        status: resp.status,
-        headers: resp.headers,
-        body: resp.data,
+      const res = await axios({
+        url: endpoint,
+        method,
+        headers,
+        data: payload
       });
+
+      // Send back response with reqId intact
+      socket.emit("task-response", {
+        requestId,
+        status: res.status,
+        body: res.data
+      });
+
     } catch (err) {
       socket.emit("task-response", {
-        client: task.client,
-        endpoint: task.endpoint,
-        status: 500,
-        body: "Error: " + err.message,
+        requestId,
+        error: err.message
       });
     }
   });

@@ -1,74 +1,122 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const { v4: uuidv4 } = require("uuid");
-
-const PORT = 3000;
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
-
-const clients = new Map();
-
-// Example test tasks array
-const tasks = [
-  { client: "clientA", endpoint: "https://google.com" },
-  { client: "clientB", endpoint: "https://yahoo.com" },
-  { client: "clientA", endpoint: "https://example.com" },
-];
-
-// when Express app connects
-io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
-
-  socket.on("register", (tunnelId) => {
-    clients.set(tunnelId, socket);
-    console.log(`Registered tunnel: ${tunnelId}`);
-  });
-
-  socket.on("disconnect", () => {
-    for (let [id, s] of clients.entries()) {
-      if (s.id === socket.id) {
-        clients.delete(id);
-        console.log(`Tunnel closed: ${id}`);
-      }
-    }
-  });
-});
-
-// relay HTTP traffic to Express client
-app.use(express.text({ type: "*/*" })); // parse raw body as string for now
-
-app.all("/tunnel/:id/*", async (req, res) => {
-  const tunnelId = req.params.id;
-  const socket = clients.get(tunnelId);
-  if (!socket) return res.status(502).send("Tunnel not connected");
-
-  const reqId = uuidv4();
-  const path = req.originalUrl.replace(`/tunnel/${tunnelId}`, "") || "/";
-
-  const payload = {
-    id: reqId,
-    method: req.method,
-    path,
-    headers: req.headers,
-    body: req.body,
-  };
-
-  // send to client, wait for response with ack
-  try {
-    const [response] = await socket.timeout(10000).emitWithAck("http-request", payload);
-    res.status(response.status).set(response.headers).send(response.body);
-  } catch (err) {
-    res.status(504).send("Timeout waiting for local app");
-  }
-});
+// const express = require("express");
+// const http = require("http");
+// const { Server } = require("socket.io");
+// const { v4: uuidv4 } = require("uuid");
 
 
-server.listen(PORT, () => {
-  console.log(`Relay server listening on port ${PORT}`);
-});
+// const PORT = 3000;
+// const app = express();
+// const server = http.createServer(app);
+// const io = new Server(server, {
+//   cors: {
+//     origin: "*",
+//   },
+// });
+
+// const clients = new Map();
+
+// // Example test tasks array
+// const tasks = [
+//   { client: "clientA", endpoint: "https://dummyjson.com/todos/2" },
+//   { client: "clientB", endpoint: "https://dummyjson.com/todos/1" },
+//   { client: "clientA", endpoint: "https://dummyjson.com/todos/3" },
+// ];
+
+// // when Express app connects
+// io.on("connection", (socket) => {
+//   console.log("Client connected:", socket.id);
+
+//   socket.on("register", (tunnelId) => {
+//     clients.set(tunnelId, socket);
+//     console.log(`Registered tunnel: ${tunnelId}`);
+//   });
+
+//   socket.on("disconnect", () => {
+//     for (let [id, s] of clients.entries()) {
+//               if (s.id === socket.id) {
+//         clients.delete(id);
+//         console.log(`Tunnel closed: ${id}`);
+//       }
+//     }
+//   });
+
+//   // handle client response
+//   socket.on("task-response", (resp) => {
+//     console.log(
+//       `Response from ${resp.client}: status=${resp.status}, endpoint=${resp.endpoint}`
+//     );
+//     console.log("Body snippet:", JSON.stringify(resp.body, null, 2)); // avoid dumping full HTML
+//   });
+// });
+
+
+// // Helper: pick random item
+// function getRandomTask() {
+//   const idx = Math.floor(Math.random() * tasks.length);
+//   return tasks[idx];
+// }
+
+
+// // Every 10 seconds, send a task to a client
+// setInterval(() => {
+//   if (clients.size === 0) {
+//     console.log("⚠️ No clients connected right now.");
+//     return;
+//   }
+
+//   const task = getRandomTask();
+//   const socket = clients.get(task.client);
+
+//   if (socket) {
+//     console.log(`➡️Sending task to ${task.client}: ${task.endpoint}`);
+//     socket.emit("perform-task", task); // send to that client
+//   } else {
+//     console.log(` Client ${task.client} not connected`);
+//   }
+// }, 10000);
+
+
+// server.listen(PORT, () => {
+//   console.log(`Relay server listening on port ${PORT}`);
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // Handle Electron client connections
+// io.on("connection", (socket) => {
+//   console.log("✅ Electron client connected:", socket.id);
+
+//   // Client registers itself
+//   socket.on("register", (clientId) => {
+//     clients.set(clientId, socket);
+//     console.log(`🟢 Registered client: ${clientId}`);
+//   });
+
+//   // Client sends back a response
+//   socket.on("task-response", (response) => {
+//     console.log("📤 Got response from client:", response);
+
+//     // Always publish response back to main platform
+//     redisPub.publish("responses", JSON.stringify(response));
+//   });
+
+//   // Cleanup on disconnect
+//   socket.on("disconnect", () => {
+//     for (let [clientId, s] of clients.entries()) {
+//       if (s === socket) {
+//         clients.delete(clientId);
+//         console.log(`🔴 Client disconnected: ${clientId}`);
+//       }
+//     }
+//   });
+// });
