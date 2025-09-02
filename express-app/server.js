@@ -1,36 +1,35 @@
+require("dotenv").config();
 const express = require('express');
 const { io } = require("socket.io-client");
 const axios = require("axios");
 
 let serverInstance = null;
 let socket = null;
+const clientId = "clientA";
+const relayURL = process.env.RELAY_URL;
 
 // Start Express server
 const app = express();
-const PORT = 3050;
+const PORT = process.env.PORT || 3050;
 
 // Simple route for testing
-app.get("/hello", (req, res) => {
-  console.log("hello root hit.!!!");
-  res.send("Hello from local Express app!");
+app.get("/", (req, res) => {
+  res.send("Hello from Electron's express app!");
 });
 
-const tunnelId = "clientA";
-
 async function startServer() {
-  if (serverInstance) return tunnelId;
+  if (serverInstance) return clientId;
 
   serverInstance = app.listen(PORT, () => {
     console.log(`Local Express running at http://localhost:${PORT}`);
   });
 
   // connect to relay server
-  const relayURL = "http://visionvibe.sbs";
   socket = io(relayURL);
   
   socket.on("connect", () => {
     console.log("Connected to relay with id:", socket.id);
-     socket.emit("register", tunnelId);
+     socket.emit("register", clientId);
   });
   
 
@@ -63,7 +62,7 @@ async function startServer() {
     }
   });
   
-  return tunnelId;
+  return clientId;
 }
 
 function stopServer() {
