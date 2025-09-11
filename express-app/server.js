@@ -55,6 +55,7 @@ async function startServer() {
       const acceptHeader = headers?.Accept || headers?.accept || "";
       if (acceptHeader.includes("csv") || acceptHeader.includes("zip")) {
         axiosConfig.responseType = "arraybuffer";
+        //We prefer arraybuffer bcoz by default Axios may return a string, which will corrupt binary data like zip.
       }
 
 
@@ -88,8 +89,9 @@ async function startServer() {
             break;
 
           case "zip":
+          case "gz":
             if (!Buffer.isBuffer(res.data)) {
-              throw new Error("Expected Buffer for ZIP response but got: " + typeof res.data);
+              throw new Error("Expected Buffer for zip/gzip response but got: " + typeof res.data);
             }
             serializedBody = res.data.toString("base64"); // Convert buffer to Base64 string for safe transmission
             encoding = "base64";
@@ -124,6 +126,7 @@ async function startServer() {
 
       const errorResponse = {
         requestId,
+        streamId,
         error: err.message,
         code: err.code,
         isAxiosError: err.isAxiosError,

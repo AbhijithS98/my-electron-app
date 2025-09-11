@@ -5,7 +5,8 @@ function getResponseType(contentType = "") {
   
   if (ct.includes('json')) return 'json';
   if (ct.includes('csv') || ct.includes('text/csv')) return 'csv';
-  if (ct.includes('zip') || ct.includes('application/zip')) return 'zip';
+  if (ct.includes('application/zip')) return 'zip';
+  if (ct.includes('gzip') || ct.includes('application/gzip')) return 'gz';
   
   return 'text';
 }
