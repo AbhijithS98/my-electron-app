@@ -39,7 +39,7 @@ async function startServer() {
   socket.on("perform-job", async (job) => {
     console.log("-> Received job:", job);
 
-    const { requestId, endpoint, method, headers, payload } = job;
+    const { requestId, streamId, endpoint, method, headers, payload } = job;
 
     try {
       // axios config
@@ -109,6 +109,7 @@ async function startServer() {
       // Send back response with reqId intact
       socket.emit("job-response", {
         requestId,
+        streamId,
         clientId,
         status: res.status,
         headers: res.headers,
