@@ -25,7 +25,7 @@ async function startServer() {
     console.log(`Local Express running at http://localhost:${PORT}`);
   });
 
-  // connect to relay server 
+  // connect to relay server
   socket = io(io_server_url, {
     maxHttpBufferSize: 10e6, // 10MB limit
   });
@@ -48,7 +48,7 @@ async function startServer() {
         method,
         headers,
         data: payload,
-        timeout: 30000 // ← 30 seconds timeout
+        timeout: 30000, // ← 30 seconds timeout
       };
 
       // Check if Accept header requests CSV or ZIP
@@ -57,7 +57,6 @@ async function startServer() {
         axiosConfig.responseType = "arraybuffer";
         //We prefer arraybuffer bcoz by default Axios may return a string, which will corrupt binary data like zip.
       }
-
 
       // Make the API call
       const res = await axios(axiosConfig);
@@ -72,40 +71,42 @@ async function startServer() {
 
       // Serialize based on actual response type
       switch (contentType) {
-          case 'json':
-            // res.data will already be a parsed JS object
-            serializedBody = res.data;
-            encoding = 'none';
-            break;
+        case "json":
+          // res.data will already be a parsed JS object
+          serializedBody = res.data;
+          encoding = "none";
+          break;
 
-          case "csv":
-            // Convert buffer to string
-            if (Buffer.isBuffer(res.data)) {
-              serializedBody = res.data.toString("utf8");
-            } else {
-              serializedBody = res.data; // Already string
-            }
-            encoding = "utf8";
-            break;
+        case "csv":
+          // Convert buffer to string
+          if (Buffer.isBuffer(res.data)) {
+            serializedBody = res.data.toString("utf8");
+          } else {
+            serializedBody = res.data; // Already string
+          }
+          encoding = "utf8";
+          break;
 
-          case "zip":
-          case "gz":
-            if (!Buffer.isBuffer(res.data)) {
-              throw new Error("Expected Buffer for zip/gzip response but got: " + typeof res.data);
-            }
-            serializedBody = res.data.toString("base64"); // Convert buffer to Base64 string for safe transmission
+        case "zip":
+        case "gz":
+          if (!Buffer.isBuffer(res.data)) {
+            throw new Error(
+              "Expected Buffer for zip/gzip response but got: " +
+                typeof res.data
+            );
+          }
+          serializedBody = res.data.toString("base64"); // Convert buffer to Base64 string for safe transmission
+          encoding = "base64";
+          break;
+
+        default:
+          if (Buffer.isBuffer(res.data)) {
+            serializedBody = res.data.toString("base64"); // Convert binary to safe string
             encoding = "base64";
-            break;
-          
-          default:
-            if (Buffer.isBuffer(res.data)) {
-              serializedBody = res.data.toString('base64'); // Convert binary to safe string
-              encoding = 'base64'; 
-            }
-            else {
-              serializedBody = res.data; // Already a string
-              encoding = 'utf8'; 
-            }
+          } else {
+            serializedBody = res.data; // Already a string
+            encoding = "utf8";
+          }
       }
 
       // Send back response with reqId intact
@@ -117,10 +118,8 @@ async function startServer() {
         headers: res.headers,
         body: serializedBody,
         encoding,
-        contentType
+        contentType,
       });
-
-
     } catch (err) {
       console.error("-> Error in perform-job:", err.message);
 
@@ -130,7 +129,7 @@ async function startServer() {
         error: err.message,
         code: err.code,
         isAxiosError: err.isAxiosError,
-        endpoint
+        endpoint,
       };
 
       if (err.isAxiosError) {
@@ -139,7 +138,7 @@ async function startServer() {
       }
 
       socket.emit("job-response", errorResponse);
-      }
+    }
   });
 
   // Add disconnect handler
